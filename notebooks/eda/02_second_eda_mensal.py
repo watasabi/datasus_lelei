@@ -58,17 +58,6 @@ def _serie_nacional_mensal(df_tempo: pd.DataFrame) -> pd.DataFrame:
     return _add_data_ref(d)
 
 
-def _participacao_mensal(df_mes_reg: pd.DataFrame) -> pd.DataFrame:
-    d = _filtro_anos(df_mes_reg)
-    br = d.groupby(["ANO", "MES"], as_index=False)["TOTAL"].sum()
-    br = br.rename(columns={"TOTAL": "TOTAL_BR"})
-    m = d.merge(br, on=["ANO", "MES"], how="left")
-    m["PCT_NACIONAL"] = np.where(
-        m["TOTAL_BR"] > 0, 100.0 * m["TOTAL"] / m["TOTAL_BR"], np.nan
-    )
-    return _add_data_ref(m)
-
-
 def _classifica_macro_ano(ano: float) -> str:
     if pd.isna(ano):
         return "Desconhecido"
@@ -248,25 +237,25 @@ def main() -> None:  # noqa: PLR0915, PLR0914
     logger.info("Salvo: %s", f4)
     plt.show()
 
-    # 5) Participação regional % por mês
-    part = _participacao_mensal(df_mes_reg)
+    # 5) Contagem mensal por região (mesma ideia do fig. 06 anual, em contagem)
+    dreg_m = _add_data_ref(_filtro_anos(df_mes_reg))
     fig, ax = plt.subplots(figsize=(14, 6))
     sns.lineplot(
-        data=part,
+        data=dreg_m,
         x="DATA",
-        y="PCT_NACIONAL",
+        y="TOTAL",
         hue="REGIAO",
         linewidth=1.0,
         ax=ax,
     )
     _plot_pandemia_strip_mes(ax)
-    ax.set_title("Participação regional (% do total mensal Sul+Sudeste)")
-    ax.set_ylabel("% do total no mês")
+    ax.set_title("Internações por mês e região (contagem, Sul+Sudeste)")
+    ax.set_ylabel("N.º de internações no mês")
     ax.set_xlabel("Mês")
     ax.legend(title="Região", bbox_to_anchor=(1.02, 1), loc="upper left")
     fig.autofmt_xdate()
     plt.tight_layout()
-    f5 = fig_dir / "06_participacao_regional_mensal_pct.png"
+    f5 = fig_dir / "06_contagem_regional_mensal.png"
     fig.savefig(f5, dpi=150, bbox_inches="tight")
     logger.info("Salvo: %s", f5)
     plt.show()

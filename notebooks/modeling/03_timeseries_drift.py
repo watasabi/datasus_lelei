@@ -208,7 +208,7 @@ def _hist_rel_freq(
 def plot_histogram_drift_overlap(
     y: np.ndarray, period: np.ndarray, fig_dir: Path
 ) -> None:
-    """Histogramas sobrepostos (densidade) por par de regimes."""
+    """Histogramas sobrepostos: contagem de meses por bin."""
     by_r = _split_by_regime(y, period)
     pairs = [
         (_REG_PANDEMIA, _REG_PRE, "Pandemia vs pré"),
@@ -225,7 +225,7 @@ def plot_histogram_drift_overlap(
         ax.hist(
             va,
             bins=bins,
-            density=True,
+            density=False,
             alpha=0.55,
             color=_REGIME_COLORS[ra],
             label=_REGIME_LABELS[ra],
@@ -233,14 +233,14 @@ def plot_histogram_drift_overlap(
         ax.hist(
             vb,
             bins=bins,
-            density=True,
+            density=False,
             alpha=0.55,
             color=_REGIME_COLORS[rb],
             label=_REGIME_LABELS[rb],
         )
         ax.set_title(title)
         ax.set_xlabel("Internações / mês")
-        ax.set_ylabel("Densidade")
+        ax.set_ylabel("N.º de meses (no bin)")
         ax.legend(fontsize=8)
     plt.suptitle(
         "Drift — sobreposição de histogramas (níveis mensais)",

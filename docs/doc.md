@@ -137,7 +137,7 @@ Gerado por `notebooks/eda/01_second_eda.py`. A faixa avermelhada (quando existe)
 | **`03_evolucao_por_regiao.png`** | Várias linhas: mesmo conceito, uma por **Sul** e **Sudeste** (ou subdivisões usadas no script). | Compara **ritmo** entre regiões. Linhas paralelas = padrão parecido; linhas que se afastam = uma região cresceu mais que a outra **nesta base**. |
 | **`04_pandemia_nacional.png`** | Barras: **soma de todas as internações** em três blocos de calendário: antes de 2020, 2020–2022, e 2023 em diante (rótulos no eixo). | Responde de forma grosseira: *“No total histórico desta base, quanto caiu em cada grande fase?”* Barras mais altas = **mais casos acumulados** naquele bloco (atenção: os blocos têm **durações diferentes** em anos — comparar também os gráficos de **média** abaixo). |
 | **`05_pandemia_por_regiao.png`** | Barras agrupadas: mesmo tipo de bloco temporal, mas **separado** por Sul / Sudeste. | Vê se o **padrão** da pandemia (subida/descida relativa) é parecido nas duas regiões ou se uma se destaca. |
-| **`06_participacao_regional_pct.png`** | Linhas: em cada **ano**, que **percentagem** do total anual veio de cada região (soma dos % no ano = 100%). | Se uma linha sobe, essa região passou a representar **fatia maior** das internações **nessa amostra** — útil para desigualdade de carga **relativa**, não para incidência populacional (falta o denominador habitante). |
+| **`06_contagem_regional_empilhada_ano.png`** | Barras **empilhadas** por **ano**: altura total = internações Sul+Sudeste naquele ano; cada cor é a **contagem** de uma região. | Lê-se em **números absolutos** (mais intuitivo que percentagem): a fatia visual de cada cor ainda mostra **proporção** entre regiões, mas o eixo Y é **casos/ano**. Para comparar só linhas por região, ver também `03_evolucao_por_regiao.png`. |
 | **`07_variacao_anual_pct_nacional.png`** | Barras: **quanto por cento** o total anual **mudou em relação ao ano anterior** (ex.: +5% ou −3%). | Mostra **aceleração ou travagem** ano a ano. Barra positiva = aumento em relação ao ano anterior; negativa = queda. Valores muito altos ou baixos merecem cautela: podem ser **oscilação** ou mudança de dados, não só doença. |
 | **`08_medias_pre_durante_pos.png`** | Barras: **média de internações por ano** dentro de cada fase (pré / durante / pós). | Ajusta um pouco a comparação da figura `04`: em vez de **soma bruta** (que depende de quantos anos tem cada fase), mostra **ritmo médio anual** em cada fase. Útil para dizer: *“Em média, cada ano desse período teve mais ou menos internações que a média de outro período?”* |
 
@@ -150,7 +150,7 @@ Gerado por `notebooks/eda/02_second_eda_mensal.py`. Os **mesmos conceitos** da s
 | **`02_evolucao_nacional_mensal.png`** | Em vez de um ponto por **ano**, há um ponto por **mês**: vê-se **oscilação** dentro do ano (ex. picos recorrentes). |
 | **`03_evolucao_regiao_mensal.png`** | Mesmo detalhe mensal, por região. |
 | **`04_pandemia_nacional.png`**, **`05_pandemia_por_regiao.png`** | Igual ideia das barras por fase (totais acumulados por período). |
-| **`06_participacao_regional_mensal_pct.png`** | Participação **mensal** — mais “ruído” que o anual; mostra se a fatia regional **oscila** ao longo do ano. |
+| **`06_contagem_regional_mensal.png`** | Linhas: **contagem de internações por mês** e por região (não é percentagem). | Mais “ruído” que o anual; mostra **níveis absolutos** e sazonalidade. A composição relativa entre regiões pode inferir-se pela distância entre linhas, não por fatias que somam 100%. |
 | **`07_variacao_mensal_pct_nacional.png`** | Mudança **em relação ao mês anterior** (não ao ano). Picos aqui podem refletir **sazonalidade** ou eventos pontuais. |
 | **`08_medias_mensais_pre_durante_pos.png`** | **Média por mês** em cada fase: comparável quando se quer falar de **ritmo mensal típico** em cada era. |
 
@@ -163,7 +163,7 @@ Gerado por `notebooks/modeling/03_timeseries_drift.py`. São análises mais téc
 | **`01_serie_mensal_regimes.png`** | A curva é o **número de internações por mês**; a zona corada é 2020–2022. Serve para **olhar** se o nível médio ou a variabilidade mudam nessa janela. |
 | **`02_ewt_componentes.png`** | Decompõe a série em **camadas** (como separar um sinal em “ondas” lentas e rápidas). A primeira linha é o total; as de baixo são **padrões extraídos automaticamente**. Útil para ver **tendência suave** vs **flutuações** sem memorizar fórmulas. |
 | **`03_changepoints_pelt.png`** | A **curva azul** é o **número real de internações por mês**. As **linhas laranja** são meses em que o algoritmo **PELT** sugere que o **patamar médio** da série pode ter mudado (ver secção 5.2.1). **Não** usa z-score. |
-| **`06_histograma_drift_sobreposicao.png`** | Dois histogramas **sobrepostos**: distribuição dos **valores mensais** em dois períodos. Se as formas se separam, os **níveis típicos** de internação mensal diferem entre períodos. |
+| **`06_histograma_drift_sobreposicao.png`** | Dois histogramas **sobrepostos** com o mesmo eixo de bins: a altura de cada barra é o **número de meses** cujo volume caiu naquele intervalo de internações/mês (não é densidade normalizada). Se as formas se separam, os **níveis típicos** diferem entre períodos. |
 | **`07_histograma_drift_delta_frequencia.png`** | **Mesma informação que o “mapa de drift” em escala real:** para cada faixa de internações/mês, quanto a **frequência relativa** de um período **ganhou ou perdeu** em relação ao outro (ver detalhe abaixo com a fig. 11). |
 | **`11_histograma_drift_delta_niveis_milhares.png`** | **Igual ao `07`**, mas o eixo horizontal está em **milhares** de internações/mês (ex.: 5 = 5000/mês). Útil para apresentações em que números grandes dificultam a leitura. |
 | **`08_histograma_drift_zscore_sobreposicao.png`** | Como o `06`, mas cada mês foi convertido em **“afastamento da média”** (z-score): valores perto de 0 = meses “típicos”; valores altos = meses com volume muito acima da média histórica da série. |
@@ -192,21 +192,93 @@ Gerado por `notebooks/modeling/03_timeseries_drift.py`. São análises mais téc
 
 ![Drift — Δ frequência em z-score](../reports/figures/timeseries_drift/09_histograma_drift_delta_frequencia_zscore.png)
 
-**O que o eixo horizontal significa (“z-score, centro do bin”)?**  
-Cada mês foi convertido em **número de desvios-padrão em relação à média global** da série. Bins à **esquerda** = meses com **poucas** internações relativamente à média histórica; à **direita** = meses com **muitas**.
+##### Em uma frase
 
-**O que é “Δ frequência relativa”?**  
-Para cada faixa de z, calculámos a **proporção de meses** que caem nessa faixa **no período A** e **no período B** (cada período soma 100% entre os bins). A barra mostra **proporção_A − proporção_B**.  
-- **Barra vermelha (positiva):** naquela faixa de “tipo de mês”, o **primeiro período nomeado** (ex.: pandemia) teve **mais** meses do que o segundo (ex.: pré).  
-- **Barra azul (negativa):** o primeiro período teve **menos** meses nessa faixa.
+Este gráfico responde: *“Comparando dois períodos, **em que tipo de mês** (muito calmo, médio, ou muito intenso) a série passou a **passar mais ou menos tempo**?”* — medido em relação à **média de toda a série**, não em números absolutos de leitos.
 
-**Leitura dos três painéis (como na imagem que analisou):**
+##### Analogia rápida (para explicar a alguém)
 
-- **Esquerda (pandemia − pré):** tendência de **menos** massa em z baixos/negativos e **mais** massa em z altos → os meses da pandemia, em conjunto, **concentraram-se mais** em volumes mensais **acima** do que era “típico” no pré-pandemia.
-- **Centro (pós − pré):** o padrão reforça-se: ainda **menos** peso nos z moderados/baixos e **pico** nos z muito altos → o pós, face ao pré, puxa para **meses de contagem muito elevada**.
-- **Direita (pós − pandemia):** compara dois períodos **já elevados**; ainda assim há **acúmulo extra** nos z mais altos à direita → sugere que, mesmo depois da janela 2020–2022, parte da distribuição permanece deslocada para **meses extremamente altos** em relação à série inteira.
+Imaginem que, durante vários anos, anotaram **cada mês** “quantas internações renais houve” e calcularam a **média** de todos esses meses. Depois, para **cada mês**, perguntam: *“Este mês foi mais baixo ou mais alto do que essa média histórica — e **quanto**?”*  
+O **z-score** é só isso: **o afastamento à média**, medido em “tamanhos de chapéu” iguais (desvios-padrão), para poder comparar **formas** sem se perder nos milhares de internações.
 
-**Ligação ao z sem ser “matemática”:** pense em **termómetro desviado da média** — a figura mostra **onde a coluna de mercúrio passou a passar mais tempo** num período do que noutro.
+- **Z perto de 0** → mês “parecido com o típico” da série inteira.  
+- **Z negativo** → mês **mais calmo** que o típico.  
+- **Z positivo grande** → mês **muito intenso** em relação ao histórico.
+
+A figura `09` **não** diz quantos doentes; diz **em que zona desse ranking** cada período concentra mais ou menos meses.
+
+##### Quem é **A** e quem é **B**? (regra fixa)
+
+Nos gráficos **`07`**, **`09`** e **`11`**, o título de cada painel tem a forma **«X − Y»** (por exemplo *pandemia − pré*). No código calcula-se sempre:
+
+**Δ = (frequência relativa de X) − (frequência relativa de Y)**  
+
+| Símbolo na doc | É o período… | No título aparece… |
+|----------------|--------------|---------------------|
+| **A** | O da **esquerda** do sinal **−** (o **primeiro** nome) | Ex.: **pandemia** em *pandemia − pré* |
+| **B** | O da **direita** do **−** (o **segundo** nome) | Ex.: **pré** em *pandemia − pré* |
+
+**Painéis concretos:**
+
+| Título no gráfico | **A** (minuendo) | **B** (subtraendo) |
+|-------------------|------------------|---------------------|
+| pandemia − pré | meses **pandemia** (2020–2022) | meses **pré** (&lt; 2020) |
+| pós − pré | meses **pós** (≥ 2023) | meses **pré** |
+| pós − pandemia | meses **pós** | meses **pandemia** |
+
+- **Barra vermelha (Δ &gt; 0):** nessa faixa do eixo, **A** tem **maior** proporção de meses do que **B**.  
+- **Barra azul (Δ &lt; 0):** **A** tem **menor** proporção do que **B**.
+
+*(O mesmo critério vale para `07`/`11`, só muda a unidade do eixo: internações/mês em vez de z-score.)*
+
+##### O que foi feito tecnicamente (passo a passo)
+
+1. **Uma linha do tempo** com um valor por mês: total de internações naquele mês (Sul+Sudeste, base limpa).  
+2. **Média** e **desvio-padrão** de **todos** esses meses juntos.  
+3. Cada mês vira **z = (mês − média) / desvio-padrão**.  
+4. Escolhem-se **faixas** de z (bins) no eixo horizontal — cada barra corresponde a uma faixa (ex.: “entre z ≈ −1 e z ≈ 0”).  
+5. Para **cada período** (pré, pandemia, pós), conta-se: *“Que **percentagem** dos meses desse período cai em cada faixa?”* (as percentagens de um período somam 100% ao longo das faixas).  
+6. Para cada faixa, calcula-se **Δ = %A − %B**, com **A** e **B** dados pelo título **«A − B»** (tabela acima).  
+7. **Vermelho** = Δ positivo; **azul** = Δ negativo.
+
+##### Como ler **uma** barra
+
+- Olhe para o **título**: o **primeiro** período é **A**, o **segundo** é **B**.  
+- **Barra vermelha para cima:** nessa faixa, **A** concentra uma **maior** fatia dos seus meses do que **B** dos seus.  
+- **Barra azul para baixo:** **A** concentra uma **menor** fatia nessa faixa do que **B**.
+
+Ou seja: estamos a comparar **dois histogramas** (dois períodos) e a desenhar **a diferença** faixa a faixa.
+
+##### Os três painéis — mensagem principal
+
+| Painel | Comparação | Leitura em palavras simples |
+|--------|------------|-----------------------------|
+| **Esquerda** | Pandemia **−** pré | Tendência para **menos** meses “abaixo do típico” (z mais baixo) e **mais** meses “acima do típico” (z mais alto) na pandemia do que antes. |
+| **Centro** | Pós **−** pré | O deslocamento reforça-se: comparado ao pré, o pós acumula ainda mais nos **z altos** — mais meses **muito acima** da média histórica. |
+| **Direita** | Pós **−** pandemia | Mesmo comparando com a pandemia (já um período alto), o pós pode mostrar **ainda mais** ênfase nos **z mais extremos** à direita — ou seja, continuação do padrão de meses “fora do comum” em relação a **toda** a série. |
+
+**Cuidado:** “fora do comum” aqui é **só** em relação à própria série (média e dispersão dos meses que temos). Não é um limiar clínico nem meta de serviço.
+
+##### Roteiro de ~2 minutos para explicares em apresentação
+
+1. *“Temos um valor por mês: internações. Primeiro vemos a média global de todos os meses.”*  
+2. *“O z-score diz se cada mês foi mais baixo ou mais alto que essa média, numa escala comum.”*  
+3. *“Este gráfico não mostra o número de doentes; mostra **onde** cada período concentra os meses nessa escala.”*  
+4. *“No título, **A − B**: o **primeiro** nome é A, o **segundo** é B. Cada barra é **% de A na faixa** menos **% de B na faixa**. Vermelho: A ganhou relativamente a B nessa faixa; azul: A perdeu.”*  
+5. *“Nos três painéis vemos que, ao longo do tempo, há deslocamento para a direita: mais meses intensos em relação ao nosso próprio histórico.”*  
+6. *“Isto é **descritivo** e **associado no tempo**; não prova que a COVID-19 causou nem substitui análise de causa com outros dados.”*
+
+##### Perguntas frequentes ao apresentar
+
+- **“Porque não aparecem internações no eixo?”** — Porque estamos a comparar a **forma** da distribuição numa escala neutra; para números absolutos usa-se a figura `07` ou `11`.  
+- **“O que é drift de forma?”** — A **forma** do “monte” de meses mudou entre períodos: não só a média, mas **onde** a massa se concentra nas faixas de intensidade.  
+- **“Os bins somam o quê?”** — Dentro de **cada** período, as frequências relativas entre faixas somam 100%; o gráfico mostra **diferenças** entre dois períodos.
+
+##### O que este gráfico **não** permite concluir
+
+- Não dá **taxa por habitante** (falta população).  
+- Não identifica **causa** (pandemia, acesso, codificação, etc.).  
+- Não substitui **revisão clínica** ou de gestão dos serviços.
 
 #### 4.5.3 Figuras `07` vs `11` vs `09` — qual usar?
 
@@ -381,7 +453,7 @@ graph TB
 | `04_bayes_mu_forest.png` | Forest plot \(\mu_k\) |
 | `05_bayes_contrastes_kde.png` | KDE das diferenças \(\Delta\mu\) (escala z) |
 | `10_bayes_kde_contrastes_internacoes_mes.png` | KDE das mesmas \(\Delta\mu\) × \(s_y\) (internações/mês) |
-| `06_histograma_drift_sobreposicao.png` | Histogramas sobrepostos (níveis) |
+| `06_histograma_drift_sobreposicao.png` | Histogramas sobrepostos (níveis; eixo Y = contagem de meses) |
 | `07_histograma_drift_delta_frequencia.png` | Δ frequência relativa (níveis) |
 | `11_histograma_drift_delta_niveis_milhares.png` | Igual ao `07`, eixo em 10³ internações/mês |
 | `08_histograma_drift_zscore_sobreposicao.png` | Histogramas sobrepostos (z-score) |

@@ -51,17 +51,6 @@ def _totais_anuais(df_tempo: pd.DataFrame) -> pd.DataFrame:
     return d.groupby("ANO", as_index=False)["TOTAL"].sum()
 
 
-def _participacao_regional(df_regiao: pd.DataFrame) -> pd.DataFrame:
-    """% do total nacional de internações, por ano e região."""
-    d = _filtro_anos(df_regiao)
-    br = d.groupby("ANO")["TOTAL"].sum().rename("TOTAL_BR")
-    m = d.merge(br, on="ANO", how="left")
-    m["PCT_NACIONAL"] = np.where(
-        m["TOTAL_BR"] > 0, 100.0 * m["TOTAL"] / m["TOTAL_BR"], np.nan
-    )
-    return m
-
-
 def _classifica_macro_ano(ano: float) -> str:
     if pd.isna(ano):
         return "Desconhecido"
@@ -232,26 +221,37 @@ def main() -> None:  # noqa: PLR0915, PLR0914
     logger.info("Salvo: %s", f4)
     plt.show()
 
-    # 5) "Taxa" relativa: participação % da região no total nacional/ano
-    part = _participacao_regional(df_regiao)
+    # 5) Contagem por região e ano (barras empilhadas — mais legível que %)
+    dreg_p = _filtro_anos(df_regiao)
+    pv = dreg_p.pivot_table(
+        index="ANO", columns="REGIAO", values="TOTAL", aggfunc="sum"
+    ).fillna(0.0)
     fig, ax = plt.subplots(figsize=(14, 6))
-    sns.lineplot(
-        data=part,
-        x="ANO",
-        y="PCT_NACIONAL",
-        hue="REGIAO",
-        marker="o",
-        ax=ax,
-    )
+    anos = pv.index.astype(int).to_numpy()
+    bottom = np.zeros(len(pv), dtype=float)
+    cores_regiao = {"Sul": "#2ecc71", "Sudeste": "#3498db"}
+    for col in pv.columns:
+        vals = pv[col].to_numpy(dtype=float)
+        ax.bar(
+            anos,
+            vals,
+            bottom=bottom,
+            label=str(col),
+            color=cores_regiao.get(str(col), "#95a5a6"),
+            alpha=0.9,
+            width=0.65,
+        )
+        bottom += vals
     _plot_pandemia_strip(ax)
     ax.set_title(
-        "Participação regional (% do total nacional de internações/ano)"
+        "Internações por ano e região (contagem — barras empilhadas, "
+        "Sul+Sudeste)"
     )
-    ax.set_ylabel("% do total Sul+Sudeste")
+    ax.set_ylabel("N.º de internações no ano")
     ax.set_xlabel("Ano")
-    ax.legend(title="Região", bbox_to_anchor=(1.02, 1), loc="upper left")
+    ax.legend(title="Região", loc="upper left")
     plt.tight_layout()
-    f5 = fig_dir / "06_participacao_regional_pct.png"
+    f5 = fig_dir / "06_contagem_regional_empilhada_ano.png"
     fig.savefig(f5, dpi=150, bbox_inches="tight")
     logger.info("Salvo: %s", f5)
     plt.show()
