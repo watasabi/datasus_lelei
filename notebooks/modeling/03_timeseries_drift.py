@@ -1,6 +1,7 @@
 """Análise de drift em série temporal: EWT, changepoints e modelo bayesiano.
 
 Série: total mensal de internações renais (Sul+Sudeste), agregado nacional.
+Taxa/100k: mesmo numerador com denominador POP_SUL+POP_SUDESTE (ano civil).
 Saídas: figuras em reports/figures/timeseries_drift/.
 """
 
@@ -74,6 +75,39 @@ def _period_idx(ano: int) -> int:
     if ano <= _PANDEMIA_FIM:
         return 1
     return 2
+
+
+def _pop_sul_mais_sudeste_por_ano(base_dir: Path) -> pd.Series | None:
+    """Pop. anual Sul+Sudeste (IBGE); índice ANO. None se CSV ausente."""
+    path = base_dir / "data" / "external" / "ibge_populacao_sul_sudeste.csv"
+    if not path.exists():
+        logger.warning(
+            "População IBGE ausente (%s); sem figura drift em taxa.",
+            path,
+        )
+        return None
+    pop = pd.read_csv(path)
+    if not {"ANO", "POP_SUL", "POP_SUDESTE"}.issubset(pop.columns):
+        logger.error("CSV de população sem colunas esperadas.")
+        return None
+    p = pop.set_index("ANO")
+    s = p["POP_SUL"] + p["POP_SUDESTE"]
+    s.name = "POP_SUL_SUDESTE"
+    return s
+
+
+def _serie_mensal_taxa_100k(
+    df: pd.DataFrame, pop_por_ano: pd.Series
+) -> np.ndarray | None:
+    m = df[["ANO", "TOTAL"]].copy()
+    m["POP"] = m["ANO"].map(pop_por_ano)
+    if m["POP"].isna().any():
+        n = int(m["POP"].isna().sum())
+        logger.warning(
+            "Pop. IBGE sem correspondência para %s meses; skip taxa drift.", n
+        )
+        return None
+    return (m["TOTAL"].astype(float) / m["POP"] * 100_000.0).to_numpy()
 
 
 def plot_serie_com_regimes(df: pd.DataFrame, fig_dir: Path) -> None:
@@ -205,10 +239,16 @@ def _hist_rel_freq(
     return centers, freq
 
 
-def plot_histogram_drift_overlap(
-    y: np.ndarray, period: np.ndarray, fig_dir: Path
+def _plot_histogram_drift_overlap_core(  # noqa: PLR0913
+    y: np.ndarray,
+    period: np.ndarray,
+    fig_dir: Path,
+    *,
+    xlabel: str,
+    suptitle: str,
+    filename: str,
 ) -> None:
-    """Histogramas sobrepostos: contagem de meses por bin."""
+    """Histogramas sobrepostos: contagem de meses por bin (eixo Y)."""
     by_r = _split_by_regime(y, period)
     pairs = [
         (_REG_PANDEMIA, _REG_PRE, "Pandemia vs pré"),
@@ -239,18 +279,48 @@ def plot_histogram_drift_overlap(
             label=_REGIME_LABELS[rb],
         )
         ax.set_title(title)
-        ax.set_xlabel("Internações / mês")
+        ax.set_xlabel(xlabel)
         ax.set_ylabel("N.º de meses (no bin)")
         ax.legend(fontsize=8)
-    plt.suptitle(
-        "Drift — sobreposição de histogramas (níveis mensais)",
-        y=1.02,
-    )
+    plt.suptitle(suptitle, y=1.02)
     plt.tight_layout()
-    out = fig_dir / "06_histograma_drift_sobreposicao.png"
+    out = fig_dir / filename
     fig.savefig(out, dpi=150, bbox_inches="tight")
     logger.info("Salvo %s", out)
     plt.close(fig)
+
+
+def plot_histogram_drift_overlap(
+    y: np.ndarray, period: np.ndarray, fig_dir: Path
+) -> None:
+    """Histogramas sobrepostos em internações/mês (níveis)."""
+    _plot_histogram_drift_overlap_core(
+        y,
+        period,
+        fig_dir,
+        xlabel="Internações / mês",
+        suptitle=(
+            "Drift — sobreposição de histogramas (níveis mensais)"
+        ),
+        filename="06_histograma_drift_sobreposicao.png",
+    )
+
+
+def plot_histogram_drift_overlap_taxa_100k(
+    y_taxa: np.ndarray, period: np.ndarray, fig_dir: Path
+) -> None:
+    """Como fig. 06; eixo X = taxa/100k hab. (pop. Sul+Sudeste, ano civil)."""
+    _plot_histogram_drift_overlap_core(
+        y_taxa,
+        period,
+        fig_dir,
+        xlabel="Internações / 100 mil hab. (mês)",
+        suptitle=(
+            "Drift — sobreposição de histogramas "
+            "(taxa mensal; pop. Sul+Sudeste por ano, IBGE)"
+        ),
+        filename="13_histograma_drift_sobreposicao_taxa_100k.png",
+    )
 
 
 def plot_histogram_drift_diff(
@@ -586,6 +656,11 @@ def main() -> None:
     plot_changepoints(y, df["DATA"], fig_dir)
 
     plot_histogram_drift_overlap(y, period, fig_dir)
+    pop_s = _pop_sul_mais_sudeste_por_ano(base)
+    if pop_s is not None:
+        y_taxa = _serie_mensal_taxa_100k(df, pop_s)
+        if y_taxa is not None:
+            plot_histogram_drift_overlap_taxa_100k(y_taxa, period, fig_dir)
     plot_histogram_drift_diff(y, period, fig_dir)
     plot_histogram_drift_diff_niveis_milhares(y, period, fig_dir)
     plot_histogram_drift_zscore(y, period, fig_dir)

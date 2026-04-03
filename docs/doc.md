@@ -177,6 +177,7 @@ Gerado por `notebooks/modeling/03_timeseries_drift.py`. São análises mais téc
 | **`02_ewt_componentes.png`** | Decompõe a série em **camadas** (como separar um sinal em “ondas” lentas e rápidas). A primeira linha é o total; as de baixo são **padrões extraídos automaticamente**. Útil para ver **tendência suave** vs **flutuações** sem memorizar fórmulas. |
 | **`03_changepoints_pelt.png`** | A **curva azul** é o **número real de internações por mês**. As **linhas laranja** são meses em que o algoritmo **PELT** sugere que o **patamar médio** da série pode ter mudado (ver secção 5.2.1). **Não** usa z-score. |
 | **`06_histograma_drift_sobreposicao.png`** | Dois histogramas **sobrepostos** com o mesmo eixo de bins: a altura de cada barra é o **número de meses** cujo volume caiu naquele intervalo de internações/mês (não é densidade normalizada). Se as formas se separam, os **níveis típicos** diferem entre períodos. |
+| **`13_histograma_drift_sobreposicao_taxa_100k.png`** | Mesma lógica que o `06`, mas cada mês é convertido em **taxa**: internações daquele mês **÷ população Sul+Sudeste daquele ano civil** × 100 000 (CSV em `data/external/`). O eixo X é **internações por 100 mil habitantes (mês)**; o Y continua a ser **contagem de meses** por bin. |
 | **`07_histograma_drift_delta_frequencia.png`** | **Mesma informação que o “mapa de drift” em escala real:** para cada faixa de internações/mês, quanto a **frequência relativa** de um período **ganhou ou perdeu** em relação ao outro (ver detalhe abaixo com a fig. 11). |
 | **`11_histograma_drift_delta_niveis_milhares.png`** | **Igual ao `07`**, mas o eixo horizontal está em **milhares** de internações/mês (ex.: 5 = 5000/mês). Útil para apresentações em que números grandes dificultam a leitura. |
 | **`08_histograma_drift_zscore_sobreposicao.png`** | Como o `06`, mas cada mês foi convertido em **“afastamento da média”** (z-score): valores perto de 0 = meses “típicos”; valores altos = meses com volume muito acima da média histórica da série. |
@@ -467,6 +468,7 @@ graph TB
 | `05_bayes_contrastes_kde.png` | KDE das diferenças \(\Delta\mu\) (escala z) |
 | `10_bayes_kde_contrastes_internacoes_mes.png` | KDE das mesmas \(\Delta\mu\) × \(s_y\) (internações/mês) |
 | `06_histograma_drift_sobreposicao.png` | Histogramas sobrepostos (níveis; eixo Y = contagem de meses) |
+| `13_histograma_drift_sobreposicao_taxa_100k.png` | Igual, com eixo X em taxa/100k (pop. Sul+Sudeste) |
 | `07_histograma_drift_delta_frequencia.png` | Δ frequência relativa (níveis) |
 | `11_histograma_drift_delta_niveis_milhares.png` | Igual ao `07`, eixo em 10³ internações/mês |
 | `08_histograma_drift_zscore_sobreposicao.png` | Histogramas sobrepostos (z-score) |
