@@ -1,0 +1,43 @@
+Cursor Rules - datasus_lelei
+
+## CRITICAL: Always Follow These Rules
+
+1. **READ AGENT.md FIRST** - Before making any changes, read `AGENT.md` for project conventions.
+2. **PACKAGE NAME** - The package is `datasus_lelei`.
+3. **FOLLOW THE PATTERNS** - This project uses Registry and Base Classes. Always follow them.
+
+## Code Style
+
+- Python 3.12+ syntax
+- Type hints on ALL functions
+- Docstrings for public APIs (Google style)
+- Line length: 79 chars
+- Use `ruff` for linting/formatting
+
+## Ruff Configuration (pyproject.toml)
+
+[tool.ruff]
+line-length = 79
+
+[tool.ruff.lint]
+preview = true
+select = ['I', 'F', 'E', 'W', 'PL', 'PT']
+ignore = ['E402', 'F811']
+
+## Commit Messages
+
+Follow Conventional Commits: `<type>(<scope>): <description>`
+
+Allowed types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`, `infra`, `imp`, `breaking`
+
+## Don'ts
+
+- DON'T hallucinate directories not in the project tree.
+- DON'T create files outside the project structure.
+- DON'T ignore type hints.
+
+## Commands Reference
+
+- Format: `uv run ruff format .`
+- Lint: `uv run ruff check .`
+- Test: `uv run pytest tests/`
