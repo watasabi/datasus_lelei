@@ -23,6 +23,27 @@ _SIGLA_PARA_REGIAO = {
 }
 
 
+def _export_csv_xlsx(df: pd.DataFrame, parquet_path: Path) -> None:
+    """Gera `mesmo_nome.csv` e `mesmo_nome.xlsx` ao lado do parquet.
+
+    O XLSX respeita o limite do Excel (~1,04 M linhas); bases maiores
+    falham — use Parquet/CSV.
+    """
+    base = parquet_path.with_suffix("")
+    csv_path = base.with_suffix(".csv")
+    xlsx_path = base.with_suffix(".xlsx")
+    # Excel não lida bem com Categorical em alguns cenários
+    out = df.copy()
+    if "FAIXA_ETARIA" in out.columns:
+        out["FAIXA_ETARIA"] = (
+            out["FAIXA_ETARIA"].astype(str).replace("nan", "")
+        )
+    out.to_csv(csv_path, index=False, encoding="utf-8-sig")
+    logger.info("CSV: %s", csv_path)
+    out.to_excel(xlsx_path, index=False, engine="openpyxl")
+    logger.info("XLSX: %s", xlsx_path)
+
+
 def clean_data(input_path: Path, output_path: Path) -> None:
     """Limpa e formata os dados renais extraídos.
 
@@ -101,12 +122,14 @@ def clean_data(input_path: Path, output_path: Path) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_parquet(output_path)
     logger.info("Dados limpos salvos em: %s", output_path)
+    _export_csv_xlsx(df, output_path)
 
     proc_dir = output_path.parents[1] / "processed"
     proc_dir.mkdir(parents=True, exist_ok=True)
     proc_file = proc_dir / output_path.name
     df.to_parquet(proc_file)
     logger.info("Cópia em: %s", proc_file)
+    _export_csv_xlsx(df, proc_file)
 
     logger.info("Total de registros processados: %s", len(df))
 

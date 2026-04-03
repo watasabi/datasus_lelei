@@ -73,7 +73,7 @@ Ordem sugerida (scripts em `notebooks/processing/`):
 | Etapa | Script | Saída principal |
 |-------|--------|-------------------|
 | 0 | `00_get_data.py` | `data/raw/batches/*.parquet`, `data/raw/renais.parquet` |
-| 1 | `01_cleaning_cols.py` | `data/raw/renais_cleaned.parquet`, espelho em `data/processed/` |
+| 1 | `01_cleaning_cols.py` | `renais_cleaned.parquet`, `.csv`, `.xlsx` em `data/raw/` e `data/processed/` |
 | 2 | `02_aggregate_data.py` | `data/interim/*.parquet` |
 
 ```mermaid

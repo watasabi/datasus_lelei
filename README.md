@@ -113,7 +113,7 @@ Na raiz do projeto, com dependências instaladas (`uv sync`):
 # 1) Lotes SIH + consolidação renais.parquet (não apaga batches existentes)
 uv run python notebooks/processing/00_get_data.py
 
-# 2) Limpeza → renais_cleaned (raw + processed)
+# 2) Limpeza → renais_cleaned.parquet + .csv + .xlsx (em raw/ e processed/)
 uv run python notebooks/processing/01_cleaning_cols.py
 
 # 3) Agregados em data/interim/
