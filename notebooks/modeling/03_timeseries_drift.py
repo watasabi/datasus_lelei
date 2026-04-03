@@ -129,13 +129,25 @@ def plot_ewt_decomp(
 
 
 def plot_changepoints(
-    y_std: np.ndarray, dates: pd.Series, fig_dir: Path
+    y_niveis: np.ndarray, dates: pd.Series, fig_dir: Path
 ) -> None:
-    algo = rpt.Pelt(model="l2").fit(y_std)
-    pen = np.log(len(y_std)) * np.var(y_std)
-    bkps = algo.predict(pen=float(pen))
+    """PELT com custo `l2` na série em **internações/mês** (sem z-score).
+
+    Penalidade: log(n) * var(y), heurística comum para escala dos dados.
+    """
+    yf = y_niveis.astype(float)
+    n = len(yf)
+    algo = rpt.Pelt(model="l2").fit(yf)
+    pen = float(np.log(n) * np.var(yf))
+    bkps = algo.predict(pen=pen)
     fig, ax = plt.subplots(figsize=(14, 5))
-    ax.plot(dates, y_std, color="gray", lw=1, label="Série padronizada")
+    ax.plot(
+        dates,
+        yf,
+        color="steelblue",
+        lw=1.2,
+        label="Internações/mês (Sul+Sudeste)",
+    )
     for b in bkps[:-1]:
         ax.axvline(
             dates.iloc[b],
@@ -145,10 +157,11 @@ def plot_changepoints(
             alpha=0.9,
         )
     ax.set_title(
-        "PELT (custo l2) — pontos de mudança sugeridos (penalidade adaptativa)"
+        "PELT (custo L²) — mudanças de patamar sugeridas "
+        "(série original; pen = log(n)·Var(y))"
     )
-    ax.set_ylabel("z-score")
-    ax.legend()
+    ax.set_ylabel("Internações no mês")
+    ax.legend(loc="upper left")
     fig.autofmt_xdate()
     plt.tight_layout()
     out = fig_dir / "03_changepoints_pelt.png"
@@ -284,6 +297,46 @@ def plot_histogram_drift_diff(
     plt.close(fig)
 
 
+def plot_histogram_drift_diff_niveis_milhares(  # noqa: PLR0914
+    y: np.ndarray, period: np.ndarray, fig_dir: Path
+) -> None:
+    """Igual ao ficheiro `07`, com eixo X em milhares de internações/mês."""
+    by_r = _split_by_regime(y, period)
+    triples = [
+        (_REG_PANDEMIA, _REG_PRE, "Δ freq: pandemia − pré"),
+        (_REG_POS, _REG_PRE, "Δ freq: pós − pré"),
+        (_REG_POS, _REG_PANDEMIA, "Δ freq: pós − pandemia"),
+    ]
+    fig, axes = plt.subplots(1, 3, figsize=(15, 4.8))
+    for ax, (ra, rb, title) in zip(axes, triples, strict=True):
+        va, vb = by_r[ra], by_r[rb]
+        if not _par_hist_ok(va, vb):
+            ax.set_title("%s (dados insuficientes)" % title)
+            continue
+        bins = _common_bins(va, vb, _N_BINS_HIST)
+        centers, fa = _hist_rel_freq(va, bins)
+        _c2, fb = _hist_rel_freq(vb, bins)
+        delta = fa - fb
+        colors = np.where(delta >= 0, "indianred", "steelblue")
+        cx = centers / 1000.0
+        w = float(np.diff(bins).mean()) / 1000.0
+        ax.bar(cx, delta, width=w, color=colors, alpha=0.75)
+        ax.axhline(0, color="black", lw=0.8)
+        ax.set_title(title)
+        ax.set_xlabel("Internações/mês (milhares; centro do bin)")
+        ax.set_ylabel("Δ frequência relativa")
+    plt.suptitle(
+        "Drift — diferença de histogramas em escala original "
+        "(não é z-score; mesmos bins que 07, eixo em 10³)",
+        y=1.03,
+    )
+    plt.tight_layout()
+    out = fig_dir / "11_histograma_drift_delta_niveis_milhares.png"
+    fig.savefig(out, dpi=150, bbox_inches="tight")
+    logger.info("Salvo %s", out)
+    plt.close(fig)
+
+
 def plot_histogram_drift_zscore(
     y: np.ndarray, period: np.ndarray, fig_dir: Path
 ) -> None:
@@ -372,6 +425,51 @@ def plot_histogram_drift_diff_zscore(
     )
     plt.tight_layout()
     out = fig_dir / "09_histograma_drift_delta_frequencia_zscore.png"
+    fig.savefig(out, dpi=150, bbox_inches="tight")
+    logger.info("Salvo %s", out)
+    plt.close(fig)
+
+
+def plot_bayesian_contrasts_niveis(
+    trace: az.InferenceData, y: np.ndarray, fig_dir: Path
+) -> None:
+    """KDE dos contrastes Δμ em internações/mês (Δz vezes desvio-padrão)."""
+    sy = float(np.std(y, ddof=0))
+    if sy <= 0:
+        logger.warning("Desvio-padrão nulo; omitindo KDE bayesiano em níveis.")
+        return
+    post = trace.posterior
+    d1 = (
+        post["mu"].sel(regime="pandemia") - post["mu"].sel(regime="pre")
+    ).values.ravel() * sy
+    d2 = (
+        post["mu"].sel(regime="pos") - post["mu"].sel(regime="pre")
+    ).values.ravel() * sy
+    d3 = (
+        post["mu"].sel(regime="pos") - post["mu"].sel(regime="pandemia")
+    ).values.ravel() * sy
+    fig, axes = plt.subplots(1, 3, figsize=(14, 4.2))
+    labels = [
+        "Δ pandemia − pré",
+        "Δ pós − pré",
+        "Δ pós − pandemia",
+    ]
+    subt = (
+        "Mesmas amostras MCMC que em 05; eixo × desvio-padrão global "
+        "da série (interpretação de patamar em internações/mês)"
+    )
+    for ax, delta, lab in zip(axes, (d1, d2, d3), labels, strict=True):
+        sns.kdeplot(delta, ax=ax, fill=True, color="darkcyan", alpha=0.45)
+        ax.axvline(0, color="red", ls="--", lw=1)
+        ax.set_title(lab)
+        ax.set_xlabel("Δ patamar aprox. (internações/mês)")
+    plt.suptitle(
+        "Contraste bayesiano (KDE) — escala de internações/mês\n%s" % subt,
+        y=1.08,
+        fontsize=11,
+    )
+    plt.tight_layout()
+    out = fig_dir / "10_bayes_kde_contrastes_internacoes_mes.png"
     fig.savefig(out, dpi=150, bbox_inches="tight")
     logger.info("Salvo %s", out)
     plt.close(fig)
@@ -485,11 +583,11 @@ def main() -> None:
     plot_serie_com_regimes(df, fig_dir)
     plot_ewt_decomp(y_dm, y, df["DATA"], fig_dir)
 
-    y_std = (y - y.mean()) / y.std()
-    plot_changepoints(y_std, df["DATA"], fig_dir)
+    plot_changepoints(y, df["DATA"], fig_dir)
 
     plot_histogram_drift_overlap(y, period, fig_dir)
     plot_histogram_drift_diff(y, period, fig_dir)
+    plot_histogram_drift_diff_niveis_milhares(y, period, fig_dir)
     plot_histogram_drift_zscore(y, period, fig_dir)
     plot_histogram_drift_diff_zscore(y, period, fig_dir)
 
@@ -504,6 +602,7 @@ def main() -> None:
 
     plot_bayesian(trace, fig_dir)
     plot_bayesian_contrasts(trace, fig_dir)
+    plot_bayesian_contrasts_niveis(trace, y, fig_dir)
 
     summ_path = fig_dir / "resumo_bayesiano.csv"
     pd.DataFrame([bayes_sum]).to_csv(summ_path, index=False)

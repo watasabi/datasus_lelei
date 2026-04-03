@@ -162,13 +162,59 @@ Gerado por `notebooks/modeling/03_timeseries_drift.py`. São análises mais téc
 |----------|------------------------------|
 | **`01_serie_mensal_regimes.png`** | A curva é o **número de internações por mês**; a zona corada é 2020–2022. Serve para **olhar** se o nível médio ou a variabilidade mudam nessa janela. |
 | **`02_ewt_componentes.png`** | Decompõe a série em **camadas** (como separar um sinal em “ondas” lentas e rápidas). A primeira linha é o total; as de baixo são **padrões extraídos automaticamente**. Útil para ver **tendência suave** vs **flutuações** sem memorizar fórmulas. |
-| **`03_changepoints_pelt.png`** | Linhas verticais laranja = meses onde um algoritmo sugere **possível mudança de comportamento** na série padronizada. **Não** é diagnóstico clínico — é **indício estatístico** para investigar (dados, políticas, eventos). |
+| **`03_changepoints_pelt.png`** | A **curva azul** é o **número real de internações por mês**. As **linhas laranja** são meses em que o algoritmo **PELT** sugere que o **patamar médio** da série pode ter mudado (ver secção 5.2.1). **Não** usa z-score. |
 | **`06_histograma_drift_sobreposicao.png`** | Dois histogramas **sobrepostos**: distribuição dos **valores mensais** em dois períodos. Se as formas se separam, os **níveis típicos** de internação mensal diferem entre períodos. |
-| **`07_histograma_drift_delta_frequencia.png`** | Mostra a **diferença** entre as duas distribuições, bin a bin: onde uma fase tem **mais** ou **menos** massa que a outra. |
-| **`08_` e `09_` (z-score)** | Mesma ideia que `06` e `07`, mas numa escala **normalizada** (comparável ao modelo estatístico). Para leitura clínica, pode ignorar o nome “z-score” e pensar: *“comparar formas sem unidade absoluta”*. |
-| **`04_bayes_mu_forest.png`** | Intervalos que resumem **onde a análise estatística “acha”** que está o nível médio de cada fase (na escala padronizada). Intervalos **não sobrepostos** sugerem **diferença consistente** com o modelo usado; sobreposição = menos certeza de diferença. |
-| **`05_bayes_contrastes_kde.png`** | Curvas suaves das **diferenças** entre fases. Se a maior parte da área está **à direita do zero**, a análise atribui **probabilidade alta** a um nível maior no segundo período (ver também `resumo_bayesiano.csv`). |
-| **`resumo_bayesiano.csv`** | Números como `P_mu_pandemia_gt_pre`: probabilidade aproximada de que o **patamar** na pandemia seja maior que no pré — **no modelo simplificado** usado (ver limitações na secção 9). |
+| **`07_histograma_drift_delta_frequencia.png`** | **Mesma informação que o “mapa de drift” em escala real:** para cada faixa de internações/mês, quanto a **frequência relativa** de um período **ganhou ou perdeu** em relação ao outro (ver detalhe abaixo com a fig. 11). |
+| **`11_histograma_drift_delta_niveis_milhares.png`** | **Igual ao `07`**, mas o eixo horizontal está em **milhares** de internações/mês (ex.: 5 = 5000/mês). Útil para apresentações em que números grandes dificultam a leitura. |
+| **`08_histograma_drift_zscore_sobreposicao.png`** | Como o `06`, mas cada mês foi convertido em **“afastamento da média”** (z-score): valores perto de 0 = meses “típicos”; valores altos = meses com volume muito acima da média histórica da série. |
+| **`09_histograma_drift_delta_frequencia_zscore.png`** | **Onde está o drift em termos de “meses normais vs extremos”** (ver subsecção dedicada e imagem em baixo). |
+| **`04_bayes_mu_forest.png`** | Intervalos que resumem **onde o modelo “acha”** o nível médio de cada fase, na **escala z** (padronizada). Intervalos **quase sem sobreposição** sugerem patamares diferentes **dentro desse modelo**. |
+| **`05_bayes_contrastes_kde.png`** | Ver subsecção **4.5.1** (KDE em z). |
+| **`10_bayes_kde_contrastes_internacoes_mes.png`** | Ver subsecção **4.5.1** (KDE na escala de internações/mês). |
+| **`resumo_bayesiano.csv`** | Probabilidades como `P_mu_pandemia_gt_pre`: fração das simulações em que o patamar da pandemia ficou **acima** do pré — **no modelo usado** (secção 9: limitações). |
+
+#### 4.5.1 O que foi feito no modelo bayesiano e nos gráficos KDE (`05` e `10`)
+
+**Passo a passo (sem fórmulas pesadas):**
+
+1. Pegámos em **cada mês** o total de internações e transformámos numa escala padrão (**z**): subtrair a média de todos os meses e dividir pelo desvio-padrão. Assim, “0” é aproximadamente um mês “no meio do caminho” da série; valores positivos = meses com **mais** internações que a média histórica.
+2. Classificámos cada mês num de **três blocos de calendário**: pré-pandemia, 2020–2022, pós (2023+).
+3. O computador correu um **modelo bayesiano** simples: em cada bloco, assume-se que os z dos meses se comportam como um “monte” à volta de uma **média desconhecida** μ (uma por bloco), com dispersão comum. **Prior** = crença fraca antes de ver os dados; **posterior** = crença atualizada **depois** dos dados, representada por **milhares de valores simulados** (MCMC/NUTS) para cada μ.
+4. O ficheiro **`resumo_bayesiano.csv`** resume perguntas do tipo: *“Em que percentagem das simulações a média da pandemia ficou acima da do pré?”* — isso é o `P_mu_*`.
+
+**O que é o KDE no `05_bayes_contrastes_kde.png`?**  
+**KDE** (*kernel density estimate*) é uma **curva suave** que aproxima o histograma das **diferenças** entre simulações, por exemplo μ_pandemia − μ_pré. Não é um novo modelo: é só uma forma **legível** de mostrar onde a massa das diferenças cai. A **linha vermelha vertical no zero** marca “nenhuma diferença”. Se a área verde está **quase toda à direita** do zero, o modelo dá **probabilidade alta** a “pandemia acima do pré” (coerente com o CSV).
+
+**E o `10_bayes_kde_contrastes_internacoes_mes.png`?**  
+É o **mesmo conjunto de simulações** que no `05`, mas cada diferença em z foi **multiplicada pelo desvio-padrão** da série original de internações/mês. Assim, o eixo passa a ser **“diferença aproximada de patamar em internações por mês”** (útil clinicamente). **Nota:** isto traduz a **diferença entre médias dos blocos na escala z** para a escala dos totais mensais; **não** substitui um modelo completo com incerteza em todas as camadas, mas **ajuda a intuição**.
+
+#### 4.5.2 Figura `09` — diferença de histogramas em z-score (drift de “forma”)
+
+![Drift — Δ frequência em z-score](../reports/figures/timeseries_drift/09_histograma_drift_delta_frequencia_zscore.png)
+
+**O que o eixo horizontal significa (“z-score, centro do bin”)?**  
+Cada mês foi convertido em **número de desvios-padrão em relação à média global** da série. Bins à **esquerda** = meses com **poucas** internações relativamente à média histórica; à **direita** = meses com **muitas**.
+
+**O que é “Δ frequência relativa”?**  
+Para cada faixa de z, calculámos a **proporção de meses** que caem nessa faixa **no período A** e **no período B** (cada período soma 100% entre os bins). A barra mostra **proporção_A − proporção_B**.  
+- **Barra vermelha (positiva):** naquela faixa de “tipo de mês”, o **primeiro período nomeado** (ex.: pandemia) teve **mais** meses do que o segundo (ex.: pré).  
+- **Barra azul (negativa):** o primeiro período teve **menos** meses nessa faixa.
+
+**Leitura dos três painéis (como na imagem que analisou):**
+
+- **Esquerda (pandemia − pré):** tendência de **menos** massa em z baixos/negativos e **mais** massa em z altos → os meses da pandemia, em conjunto, **concentraram-se mais** em volumes mensais **acima** do que era “típico” no pré-pandemia.
+- **Centro (pós − pré):** o padrão reforça-se: ainda **menos** peso nos z moderados/baixos e **pico** nos z muito altos → o pós, face ao pré, puxa para **meses de contagem muito elevada**.
+- **Direita (pós − pandemia):** compara dois períodos **já elevados**; ainda assim há **acúmulo extra** nos z mais altos à direita → sugere que, mesmo depois da janela 2020–2022, parte da distribuição permanece deslocada para **meses extremamente altos** em relação à série inteira.
+
+**Ligação ao z sem ser “matemática”:** pense em **termómetro desviado da média** — a figura mostra **onde a coluna de mercúrio passou a passar mais tempo** num período do que noutro.
+
+#### 4.5.3 Figuras `07` vs `11` vs `09` — qual usar?
+
+| Figura | Eixo X | Melhor para… |
+|--------|--------|----------------|
+| **07** | Internações/mês (valor real) | Quem quer números **absolutos** do SIH. |
+| **11** | Milhares de internações/mês | **Apresentações**; evita muitos zeros no eixo. |
+| **09** | z-score | Comparar com o **modelo bayesiano** e falar de “meses típicos vs extremos” **sem** fixar primeiro o número exato de leitos. |
 
 ### 4.6 Frases que um estudante de medicina pode usar (e frases a evitar)
 
@@ -218,9 +264,40 @@ flowchart LR
 ```
 
 1. **Visualização** — série com faixa 2020–2022.
-2. **PELT** (`ruptures`, custo `l2`) — pontos de mudança em série **padronizada**; penalidade proporcional a \(\log(n)\hat\sigma^2)\) (heurística comum).
+2. **PELT** (`ruptures`, custo **L²**) — pontos de mudança na série **em internações/mês** (secção 5.2.1).
 3. **Mann-Whitney** — comparação de distribuições de níveis entre pares de regimes (não assume normalidade).
 4. **Bayesiano** — modelo gaussiano com médias distintas por regime na série padronizada (ver secção 7).
+
+### 5.2.1 PELT e custo L² — como funciona (para estudantes)
+
+**O que queremos descobrir?**  
+Imaginem a curva mensal de internações como uma linha no tempo. Em alguns meses, parece que o “andar” da série **mudou de nível** (como se o termómetro da procura por leitos tivesse subido ou descido e **ficado** num novo patamar por um tempo). O **changepoint** (*ponto de mudança*) é uma data em que o algoritmo sugere: *“a partir daqui, faz mais sentido pensar noutra média”*.
+
+**O que é o custo L² ( “l2” no código )?**  
+O método parte de uma ideia simples:
+
+- Se escolhermos um **troço** da série (vários meses seguidos), podemos calcular a **média** desse troço.
+- Para cada mês desse troço, medimos o **erro** = (valor real − média do troço)².
+- Somamos todos esses quadrados no troço. Esse somatório é o **custo L²** desse segmento: quanto **menor**, melhor o troço se ajusta a um **nível constante** (como uma reta horizontal).
+
+Intuição clínica: *“Se eu disser que neste período o volume típico foi X internações/mês, quanto a série **foge** desse número mês a mês?”* — o L² acumula essas “fugas” ao quadrado.
+
+**O que é o PELT?**  
+**PELT** (*Pruned Exact Linear Time*) é um algoritmo **rápido** que procura **onde cortar** a linha do tempo em vários segmentos para **minimizar** a soma dos custos L² de **todos** os segmentos, **mas** com uma regra: **cada corte extra paga uma multa** (penalidade).
+
+- **Muitos cortes** → encaixa melhor os picos e vales, mas **paga muita multa**.
+- **Poucos cortes** → modelo simples, mas pode **forçar** um único nível onde na verdade houve duas realidades diferentes.
+
+No projeto usamos a penalidade **heurística** `pen = log(n) × Var(y)`, com `n` = número de meses e `Var(y)` = variância da série **no valor original** (internações/mês). Assim a multa **escala** com o tamanho e a “barulhentidade” dos dados: séries mais variáveis toleram menos cortes espúrios se não forem justificados.
+
+**O que não é isto?**
+
+- **Não** é o mesmo que a faixa vermelha “pandemia” do gráfico 01 — aqui as datas laranja vêm **só** da matemática do PELT, não do calendário epidemiológico.
+- **Não** prova que a COVID-19 causou a mudança; pode coincidir ou não com políticas, atrasos de registo, expansão de cobertura, etc.
+- **Não** substitui julgamento clínico ou de serviço: é **apoio** à exploração.
+
+**Porque tirámos o z-score deste gráfico?**  
+Na escala **z**, os números perdem a unidade “internações” e confundem quem lê relatórios clínicos. O ficheiro `03_` passou a mostrar **diretamente** internações/mês, alinhado ao gráfico `01_`.
 
 ---
 
@@ -285,6 +362,11 @@ graph TB
 
 **Advertência:** o modelo trata cada observação mensal como **i.i.d. condicionalmente** ao regime, **sem** componente AR ou sazonalidade explícita. Serve como **teste de patamar** entre blocos, não como previsão ou causalidade estrita (políticas, acesso, subnotificação, mudanças de codificação CID etc. não são modelados).
 
+### 7.4 KDE dos contrastes (`05`) e escala natural (`10`)
+
+- **`05_bayes_contrastes_kde.png`:** para cada par de regimes, tomam-se **todas as amostras** da posterior das diferenças \(\Delta\mu = \mu_a - \mu_b\) (em **unidades z**). O **KDE** (Seaborn/Matplotlib) estima a densidade dessas diferenças; a área sob a curva integra 1. A linha a **zero** separa “B maior que A” (lado negativo) de “A maior que B” (lado positivo), conforme a ordem da diferença definida no código (`pandemia − pré`, etc.).
+- **`10_bayes_kde_contrastes_internacoes_mes.png`:** as mesmas amostras \(\Delta\mu\) são multiplicadas por \(s_y = \text{desvio-padrão amostral dos totais mensais}\). Como \(z_t = (y_t - \bar y)/s_y\), uma diferença de **1 unidade em z** entre médias de regimes corresponde a uma diferença de **\(s_y\) internações/mês** no **patamar** (interpretação linear das médias na transformação afim). O KDE é apenas **visualização** dessa reparametrização; as probabilidades em `resumo_bayesiano.csv` **não mudam** (são invariantes a mudanças de escala monotónicas nas μ).
+
 ---
 
 ## 8. Artefatos gerados
@@ -295,11 +377,13 @@ graph TB
 |---------|----------|
 | `01_serie_mensal_regimes.png` | Série mensal + faixa pandemia |
 | `02_ewt_componentes.png` | EWT 1D — componentes |
-| `03_changepoints_pelt.png` | PELT em série padronizada |
+| `03_changepoints_pelt.png` | PELT (L²) em internações/mês + linhas de mudança |
 | `04_bayes_mu_forest.png` | Forest plot \(\mu_k\) |
-| `05_bayes_contrastes_kde.png` | KDE das diferenças \(\Delta\mu\) |
+| `05_bayes_contrastes_kde.png` | KDE das diferenças \(\Delta\mu\) (escala z) |
+| `10_bayes_kde_contrastes_internacoes_mes.png` | KDE das mesmas \(\Delta\mu\) × \(s_y\) (internações/mês) |
 | `06_histograma_drift_sobreposicao.png` | Histogramas sobrepostos (níveis) |
-| `07_histograma_drift_delta_frequencia.png` | Δ frequência relativa por bin |
+| `07_histograma_drift_delta_frequencia.png` | Δ frequência relativa (níveis) |
+| `11_histograma_drift_delta_niveis_milhares.png` | Igual ao `07`, eixo em 10³ internações/mês |
 | `08_histograma_drift_zscore_sobreposicao.png` | Histogramas sobrepostos (z-score) |
 | `09_histograma_drift_delta_frequencia_zscore.png` | Δ frequência (z-score) |
 | `resumo_bayesiano.csv` | Probabilidades e médias posteriores |
