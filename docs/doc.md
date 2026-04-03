@@ -180,6 +180,7 @@ Gerado por `notebooks/modeling/03_timeseries_drift.py`. São análises mais téc
 | **`13_histograma_drift_sobreposicao_taxa_100k.png`** | Mesma lógica que o `06`, mas cada mês é convertido em **taxa**: internações daquele mês **÷ população Sul+Sudeste daquele ano civil** × 100 000 (CSV em `data/external/`). O eixo X é **internações por 100 mil habitantes (mês)**; o Y continua a ser **contagem de meses** por bin. |
 | **`14_hist2d_internacoes_vs_taxa_pop_por_regime.png`** | **Três painéis** (pré / pandemia / pós): histograma **2D** em que **X = internações/mês**, **Y = casos ÷ população (×10⁵)** e a cor conta **quantos meses** caem em cada retângulo. Junta volume bruto e taxa no mesmo gráfico, **separado por regime** (equivalente a *hue* em colunas). |
 | **`15_histograma_1d_internacoes_e_taxa_hue_regime.png`** | Dois histogramas **1D** sobrepostos: em cima, distribuição de **internações/mês**; em baixo, distribuição da **taxa** (casos÷pop ×10⁵). Em ambos, **três curvas** (pré, pandemia, pós) com a mesma legenda. |
+| **`16_histograma_drift_inter_mes_taxa_media_por_bin.png`** | **Mesmo desenho que o `06`** (1×3, pares sobrepostos e mesmas cores), mas o **eixo Y não conta meses**: em cada bin de **internações/mês**, a altura é a **média da taxa** (casos÷pop ×10⁵) entre os meses que caíram naquele bin — por regime (IBGE Sul+Sudeste). |
 | **`07_histograma_drift_delta_frequencia.png`** | **Mesma informação que o “mapa de drift” em escala real:** para cada faixa de internações/mês, quanto a **frequência relativa** de um período **ganhou ou perdeu** em relação ao outro (ver detalhe abaixo com a fig. 11). |
 | **`11_histograma_drift_delta_niveis_milhares.png`** | **Igual ao `07`**, mas o eixo horizontal está em **milhares** de internações/mês (ex.: 5 = 5000/mês). Útil para apresentações em que números grandes dificultam a leitura. |
 | **`08_histograma_drift_zscore_sobreposicao.png`** | Como o `06`, mas cada mês foi convertido em **“afastamento da média”** (z-score): valores perto de 0 = meses “típicos”; valores altos = meses com volume muito acima da média histórica da série. |
@@ -473,6 +474,7 @@ graph TB
 | `13_histograma_drift_sobreposicao_taxa_100k.png` | Igual, com eixo X em taxa/100k (pop. Sul+Sudeste) |
 | `14_hist2d_internacoes_vs_taxa_pop_por_regime.png` | Hist2D: internações/mês × taxa; coluna = regime |
 | `15_histograma_1d_internacoes_e_taxa_hue_regime.png` | Dois hist 1D com três regimes sobrepostos |
+| `16_histograma_drift_inter_mes_taxa_media_por_bin.png` | Como 06; Y = média taxa/pop no bin de internações |
 | `07_histograma_drift_delta_frequencia.png` | Δ frequência relativa (níveis) |
 | `11_histograma_drift_delta_niveis_milhares.png` | Igual ao `07`, eixo em 10³ internações/mês |
 | `08_histograma_drift_zscore_sobreposicao.png` | Histogramas sobrepostos (z-score) |

@@ -324,6 +324,92 @@ def plot_histogram_drift_overlap_taxa_100k(
     )
 
 
+def _media_taxa_por_bin_inter(
+    inter: np.ndarray, taxa: np.ndarray, bins: np.ndarray
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Média de `taxa` por bin de `inter` (internações/mês)."""
+    sums, _ = np.histogram(inter, bins=bins, weights=taxa)
+    cnts, _ = np.histogram(inter, bins=bins)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        mean_t = np.divide(
+            sums.astype(float),
+            cnts.astype(float),
+            out=np.full_like(sums, np.nan, dtype=float),
+            where=cnts > 0,
+        )
+    centers = (bins[:-1] + bins[1:]) / 2.0
+    widths = np.diff(bins)
+    return mean_t, centers, widths
+
+
+def plot_histogram_drift_overlap_inter_mes_taxa_media_eixo_y(  # noqa: PLR0914
+    y_inter: np.ndarray,
+    y_taxa: np.ndarray,
+    period: np.ndarray,
+    fig_dir: Path,
+) -> None:
+    """Como fig. 06: X = bins internações/mês; Y = média taxa no bin."""
+    by_i: dict[int, np.ndarray] = {
+        r: y_inter[period == r] for r in (_REG_PRE, _REG_PANDEMIA, _REG_POS)
+    }
+    by_t: dict[int, np.ndarray] = {
+        r: y_taxa[period == r] for r in (_REG_PRE, _REG_PANDEMIA, _REG_POS)
+    }
+    pairs = [
+        (_REG_PANDEMIA, _REG_PRE, "Pandemia vs pré"),
+        (_REG_POS, _REG_PRE, "Pós vs pré"),
+        (_REG_POS, _REG_PANDEMIA, "Pós vs pandemia"),
+    ]
+    fig, axes = plt.subplots(1, 3, figsize=(15, 4.5))
+    for ax, (ra, rb, title) in zip(axes, pairs, strict=True):
+        va, vb = by_i[ra], by_i[rb]
+        ta, tb = by_t[ra], by_t[rb]
+        if not _par_hist_ok(va, vb):
+            ax.set_title("%s (dados insuficientes)" % title)
+            continue
+        bins = _common_bins(va, vb, _N_BINS_HIST)
+        ma, centers, widths = _media_taxa_por_bin_inter(va, ta, bins)
+        mb, _, _ = _media_taxa_por_bin_inter(vb, tb, bins)
+        ma = np.nan_to_num(ma, nan=0.0)
+        mb = np.nan_to_num(mb, nan=0.0)
+        ax.bar(
+            centers,
+            ma,
+            width=widths,
+            align="center",
+            alpha=0.55,
+            color=_REGIME_COLORS[ra],
+            label=_REGIME_LABELS[ra],
+            edgecolor="white",
+            linewidth=0.35,
+        )
+        ax.bar(
+            centers,
+            mb,
+            width=widths,
+            align="center",
+            alpha=0.55,
+            color=_REGIME_COLORS[rb],
+            label=_REGIME_LABELS[rb],
+            edgecolor="white",
+            linewidth=0.35,
+        )
+        ax.set_title(title)
+        ax.set_xlabel("Internações / mês")
+        ax.set_ylabel("Taxa média no bin (casos÷pop ×10⁵)")
+        ax.legend(fontsize=8)
+    plt.suptitle(
+        "Drift — bins: internações/mês; Y: média casos÷pop×10⁵ no bin "
+        "(IBGE Sul+Sudeste)",
+        y=1.02,
+    )
+    plt.tight_layout()
+    out = fig_dir / "16_histograma_drift_inter_mes_taxa_media_por_bin.png"
+    fig.savefig(out, dpi=150, bbox_inches="tight")
+    logger.info("Salvo %s", out)
+    plt.close(fig)
+
+
 def _regime_label_order() -> tuple[list[str], dict[str, str]]:
     order = [
         _REGIME_LABELS[_REG_PRE],
@@ -791,6 +877,9 @@ def main() -> None:
                 y, y_taxa, period, fig_dir
             )
             plot_hist1d_internacoes_e_taxa_hue_regime(
+                y, y_taxa, period, fig_dir
+            )
+            plot_histogram_drift_overlap_inter_mes_taxa_media_eixo_y(
                 y, y_taxa, period, fig_dir
             )
     plot_histogram_drift_diff(y, period, fig_dir)
