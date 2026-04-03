@@ -1,8 +1,9 @@
 """Análise de drift em série temporal: EWT, changepoints e modelo bayesiano.
 
 Série: total mensal de internações renais (Sul+Sudeste), agregado nacional.
-Taxa/100k: mesmo numerador com denominador POP_SUL+POP_SUDESTE (ano civil).
-Saídas: figuras em reports/figures/timeseries_drift/.
+Taxa/100k: numerador mensal ÷ POP_SUL+POP_SUDESTE (ano civil, IBGE).
+Fig. 14–15: internações/mês × taxa/pop (×10⁵); cores = pré / pandemia / pós.
+Saídas: reports/figures/timeseries_drift/.
 """
 
 from __future__ import annotations
@@ -321,6 +322,131 @@ def plot_histogram_drift_overlap_taxa_100k(
         ),
         filename="13_histograma_drift_sobreposicao_taxa_100k.png",
     )
+
+
+def _regime_label_order() -> tuple[list[str], dict[str, str]]:
+    order = [
+        _REGIME_LABELS[_REG_PRE],
+        _REGIME_LABELS[_REG_PANDEMIA],
+        _REGIME_LABELS[_REG_POS],
+    ]
+    pal = {
+        _REGIME_LABELS[_REG_PRE]: _REGIME_COLORS[_REG_PRE],
+        _REGIME_LABELS[_REG_PANDEMIA]: _REGIME_COLORS[_REG_PANDEMIA],
+        _REGIME_LABELS[_REG_POS]: _REGIME_COLORS[_REG_POS],
+    }
+    return order, pal
+
+
+def plot_hist2d_internacoes_vs_taxa_por_regime(
+    y_inter: np.ndarray,
+    y_taxa: np.ndarray,
+    period: np.ndarray,
+    fig_dir: Path,
+) -> None:
+    """Hist2D: X = internações/mês; Y = casos÷pop (×10⁵); coluna = regime."""
+    regimes = (_REG_PRE, _REG_PANDEMIA, _REG_POS)
+    x_edges = np.linspace(
+        float(np.min(y_inter)), float(np.max(y_inter)), _N_BINS_HIST + 1
+    )
+    y_edges = np.linspace(
+        float(np.min(y_taxa)), float(np.max(y_taxa)), _N_BINS_HIST + 1
+    )
+    hmax = 0.0
+    for reg in regimes:
+        m = period == reg
+        if int(m.sum()) < 1:
+            continue
+        h, _xe, _ye = np.histogram2d(
+            y_inter[m],
+            y_taxa[m],
+            bins=[x_edges, y_edges],
+        )
+        hmax = max(hmax, float(np.max(h)))
+    vmax = max(hmax, 1.0)
+
+    fig, axes = plt.subplots(
+        1,
+        3,
+        figsize=(15, 4.4),
+        sharex=True,
+        sharey=True,
+        layout="constrained",
+    )
+    mappable = None
+    for ax, reg in zip(axes, regimes, strict=True):
+        m = period == reg
+        ax.set_title(_REGIME_LABELS[reg])
+        ax.set_xlabel("Internações / mês")
+        ax.set_ylabel("Casos ÷ população (×10⁵ hab.)")
+        if int(m.sum()) < 1:
+            continue
+        _, _, _, mappable = ax.hist2d(
+            y_inter[m],
+            y_taxa[m],
+            bins=[x_edges, y_edges],
+            cmap="Blues",
+            vmin=0.0,
+            vmax=vmax,
+        )
+    if mappable is not None:
+        cb = fig.colorbar(mappable, ax=axes.ravel().tolist(), shrink=0.85)
+        cb.set_label("N.º de meses (bin 2D)")
+    fig.suptitle(
+        "Histograma 2D por regime — X: internações/mês; "
+        "Y: taxa (IBGE Sul+Sudeste)",
+        y=1.03,
+    )
+    out = fig_dir / "14_hist2d_internacoes_vs_taxa_pop_por_regime.png"
+    fig.savefig(out, dpi=150, bbox_inches="tight")
+    logger.info("Salvo %s", out)
+    plt.close(fig)
+
+
+def plot_hist1d_internacoes_e_taxa_hue_regime(
+    y_inter: np.ndarray,
+    y_taxa: np.ndarray,
+    period: np.ndarray,
+    fig_dir: Path,
+) -> None:
+    """Dois histogramas 1D com os três regimes sobrepostos (hue)."""
+    order, pal = _regime_label_order()
+    reg_name = np.array([_REGIME_LABELS[int(p)] for p in period])
+    d = pd.DataFrame(
+        {
+            "Internações / mês": y_inter,
+            "Casos ÷ população (×10⁵ hab.)": y_taxa,
+            "Regime": reg_name,
+        }
+    )
+    fig, axes = plt.subplots(2, 1, figsize=(11, 8), sharex=False)
+    for ax, col in zip(
+        axes,
+        ("Internações / mês", "Casos ÷ população (×10⁵ hab.)"),
+        strict=True,
+    ):
+        sns.histplot(
+            data=d,
+            x=col,
+            hue="Regime",
+            hue_order=order,
+            palette=pal,
+            bins=_N_BINS_HIST,
+            stat="count",
+            element="step",
+            multiple="layer",
+            ax=ax,
+        )
+        ax.set_ylabel("N.º de meses (no bin)")
+    plt.suptitle(
+        "Histogramas 1D — pré / pandemia / pós (pop. IBGE Sul+Sudeste)",
+        y=1.01,
+    )
+    plt.tight_layout()
+    out = fig_dir / "15_histograma_1d_internacoes_e_taxa_hue_regime.png"
+    fig.savefig(out, dpi=150, bbox_inches="tight")
+    logger.info("Salvo %s", out)
+    plt.close(fig)
 
 
 def plot_histogram_drift_diff(
@@ -661,6 +787,12 @@ def main() -> None:
         y_taxa = _serie_mensal_taxa_100k(df, pop_s)
         if y_taxa is not None:
             plot_histogram_drift_overlap_taxa_100k(y_taxa, period, fig_dir)
+            plot_hist2d_internacoes_vs_taxa_por_regime(
+                y, y_taxa, period, fig_dir
+            )
+            plot_hist1d_internacoes_e_taxa_hue_regime(
+                y, y_taxa, period, fig_dir
+            )
     plot_histogram_drift_diff(y, period, fig_dir)
     plot_histogram_drift_diff_niveis_milhares(y, period, fig_dir)
     plot_histogram_drift_zscore(y, period, fig_dir)
