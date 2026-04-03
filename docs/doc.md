@@ -126,6 +126,8 @@ Gerado por `notebooks/eda/00_first_eda.py`.
 |----------|-------------------|----------------------------------|
 | **`00_idade_por_regiao.png`** | Barras empilhadas: **idade** das pessoas internadas, cores = **Sul** ou **Sudeste**. | O eixo horizontal é a idade; a altura mostra **quantas internações** caem em cada faixa etária. Se uma cor domina numa idade, essa região contribui mais para internações nessa idade. **Não** diz qual região é “pior em saúde” — só descreve **quem preenche** a base. |
 | **`01_volume_por_regiao.png`** | Barras horizontais: **quantas internações** no total da base, separadas por **Sul** e **Sudeste**. | Compara **tamanho bruto** entre as duas macro-regiões na amostra. Quem tem barra mais longa tem **mais registos** neste recorte (pode refletir população maior, oferta de leitos, captação de dados, etc.). |
+| **`09_cids_renais_contagem.png`** | Barras horizontais: **quantas internações** por **CID renal** de diagnóstico principal — só códigos do **capítulo N17–N19** (CID-10), alinhado ao filtro da extração SIH. | Mostra **quais subcódigos renais** (ex. N18.x, N19.x) dominam a amostra. Não é prevalência populacional; **vazios ou fora de N17–N19** não entram no gráfico. |
+| **`10_cids_renais_por_periodo_pandemia.png`** | Igual ao anterior, com barras **empilhadas** por **pré / pandemia / pós** (ano da internação). | Vê se a **mistura de CIDs renais** mudou entre eras. **Durações diferentes** por fase — comparar também **fatias** dentro de cada barra. |
 
 ### 4.3 Evolução no tempo (por ano) — `reports/figures/eda/`
 
@@ -141,6 +143,17 @@ Gerado por `notebooks/eda/01_second_eda.py`. A faixa avermelhada (quando existe)
 | **`07_variacao_anual_pct_nacional.png`** | Barras: **quanto por cento** o total anual **mudou em relação ao ano anterior** (ex.: +5% ou −3%). | Mostra **aceleração ou travagem** ano a ano. Barra positiva = aumento em relação ao ano anterior; negativa = queda. Valores muito altos ou baixos merecem cautela: podem ser **oscilação** ou mudança de dados, não só doença. |
 | **`08_medias_pre_durante_pos.png`** | Barras: **média de internações por ano** dentro de cada fase (pré / durante / pós). | Ajusta um pouco a comparação da figura `04`: em vez de **soma bruta** (que depende de quantos anos tem cada fase), mostra **ritmo médio anual** em cada fase. Útil para dizer: *“Em média, cada ano desse período teve mais ou menos internações que a média de outro período?”* |
 
+#### Taxa por população (IBGE — só Sul e Sudeste)
+
+Gerado por `notebooks/eda/03_eda_taxa_populacao.py`. O denominador vem de `data/external/ibge_populacao_sul_sudeste.csv` (habitantes **Sul** e **Sudeste** por ano; valores alinhados à tabela IBGE que forneceste). O escopo agregado usa **soma das populações** das duas regiões — **não** a linha “TOTAL” nacional da tabela original.
+
+| Ficheiro | O que é | Como ler |
+|----------|---------|----------|
+| **`11_taxa_internacoes_100k_por_regiao.png`** | Linhas: **internações por 100 mil habitantes** em **Sul** e em **Sudeste**, cada uma com o **próprio denominador regional**. | Compara **carga relativa à população** entre macro-regiões. Ainda é taxa de **internação SIH** (captação, codificação, oferta), não incidência clínica literal na comunidade. |
+| **`12_taxa_internacoes_100k_escopo_sul_mais_sudeste.png`** | Uma linha: **todas as internações Sul+Sudeste** no numerador e **POP_SUL + POP_SUDESTE** no denominador. | É o “total” do teu recorte geográfico **padronizado por população do mesmo recorte**. |
+
+Tabela numérica: `reports/tables/taxa_internacoes_100k_sul_sudeste.csv`.
+
 ### 4.4 Evolução mês a mês — `reports/figures/eda/mensal/`
 
 Gerado por `notebooks/eda/02_second_eda_mensal.py`. Os **mesmos conceitos** da secção anterior, com **mais detalhe** (sazonalidade dentro do ano).
@@ -150,7 +163,7 @@ Gerado por `notebooks/eda/02_second_eda_mensal.py`. Os **mesmos conceitos** da s
 | **`02_evolucao_nacional_mensal.png`** | Em vez de um ponto por **ano**, há um ponto por **mês**: vê-se **oscilação** dentro do ano (ex. picos recorrentes). |
 | **`03_evolucao_regiao_mensal.png`** | Mesmo detalhe mensal, por região. |
 | **`04_pandemia_nacional.png`**, **`05_pandemia_por_regiao.png`** | Igual ideia das barras por fase (totais acumulados por período). |
-| **`06_contagem_regional_mensal.png`** | Linhas: **contagem de internações por mês** e por região (não é percentagem). | Mais “ruído” que o anual; mostra **níveis absolutos** e sazonalidade. A composição relativa entre regiões pode inferir-se pela distância entre linhas, não por fatias que somam 100%. |
+| **`06_contagem_regional_mensal.png`** | Linhas: **contagem de internações por mês** e por região (não é percentagem); mais “ruído” que o anual. A composição relativa entre regiões infere-se pela distância entre linhas. |
 | **`07_variacao_mensal_pct_nacional.png`** | Mudança **em relação ao mês anterior** (não ao ano). Picos aqui podem refletir **sazonalidade** ou eventos pontuais. |
 | **`08_medias_mensais_pre_durante_pos.png`** | **Média por mês** em cada fase: comparável quando se quer falar de **ritmo mensal típico** em cada era. |
 
@@ -472,14 +485,14 @@ Recomenda-se `MPLBACKEND=Agg` em servidores sem display.
 
 | Pasta | Scripts |
 |-------|---------|
-| `reports/figures/eda/` | `00_first_eda.py`, `01_second_eda.py` |
+| `reports/figures/eda/` | `00_first_eda.py`, `01_second_eda.py`, `03_eda_taxa_populacao.py` |
 | `reports/figures/eda/mensal/` | `02_second_eda_mensal.py` |
 
 ---
 
 ## 9. Limitações
 
-- **População:** não há denominador populacional; “taxas por 100 mil hab.” exigiriam projeções IBGE por UF/região.
+- **População:** as figuras `11` e `12` usam denominador IBGE **Sul+Sudeste** (`data/external/`); o resto do relatório continua em **contagens SIH** sem ajuste populacional por UF.
 - **Independência mensal:** o modelo bayesiano simplificado ignora autocorrelação temporal; para decisões críticas, estender para **modelos dinâmicos** ou **changepoint bayesiano** explícito.
 - **Causalidade:** diferenças entre regimes **não** são atribuíveis só à pandemia; são associadas temporalmente.
 - **Arviz / PyMC:** o projeto fixa `arviz>=0.17,<1` por compatibilidade com PyMC 5.x (ArviZ 1.x alterou a API de importação).

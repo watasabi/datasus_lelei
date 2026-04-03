@@ -123,6 +123,7 @@ uv run python notebooks/processing/02_aggregate_data.py
 uv run python notebooks/eda/00_first_eda.py
 uv run python notebooks/eda/01_second_eda.py
 uv run python notebooks/eda/02_second_eda_mensal.py
+uv run python notebooks/eda/03_eda_taxa_populacao.py
 
 # 5) Drift temporal: EWT + PELT + Bayes (figuras em reports/figures/timeseries_drift/)
 MPLBACKEND=Agg uv run python notebooks/modeling/03_timeseries_drift.py
