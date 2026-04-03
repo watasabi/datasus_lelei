@@ -4,7 +4,18 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "arviz>=0.17,<1",
+    "ipykernel>=7.2.0",
+    "matplotlib>=3.10.8",
+    "pandas>=2.3.3",
+    "pyarrow>=23.0.1",
+    "pyewt>=1.0.0",
+    "pymc>=5.28.0",
+    "pysus>=1.0.1",
+    "ruptures>=1.1.10",
+    "seaborn>=0.13.2",
+]
 
 [dependency-groups]
 dev = [

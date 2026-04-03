@@ -3,7 +3,7 @@
 <div align="center">
   <h1 align="center">datasus_lelei</h1>
   <p align="center">
-    A short description of the project.
+    Internações renais (SIH-RD, CIDs N17–N19) — escopo Sul e Sudeste: extração, limpeza, EDA e análise de drift temporal (EWT, changepoints, Bayes).
     <br />
     <br />
     <img src="https://img.shields.io/badge/Python-3.12-blue?style=for-the-badge&logo=python&logoColor=white" alt="Python">
@@ -22,6 +22,8 @@
       </ul>
     </li>
     <li><a href="#organizacao-e-estrutura">Organização e Estrutura</a></li>
+    <li><a href="#documentacao-detalhada">Documentação detalhada</a></li>
+    <li><a href="#pipeline-de-dados-e-analises">Pipeline de dados e análises</a></li>
     <li><a href="#configuracao-de-ambiente">Configuração de Ambiente</a></li>
     <li><a href="#convencao-de-commits">Convenção de Commits</a></li>
     <li><a href="#autor">Autor</a></li>
@@ -33,19 +35,17 @@
 
 ## Sobre o Projeto
 
-Uma breve descrição do contexto de negócio, objetivos e metodologia deste projeto.
+Estudo reprodutível sobre **internações hospitalares por doença renal** no SUS, usando o **SIH (RD)** com extração via **PySUS**. O recorte geográfico atual restringe-se às UFs do **Sul e Sudeste** (`PR`, `RS`, `SC`, `SP`, `MG`, `RJ`, `ES`). Inclui análise exploratória, agregados temporais e um módulo de **séries temporais** com foco em **drift** entre períodos pré-pandemia, pandemia (2020–2022) e pós-pandemia, usando decomposição **EWT**, **PELT** (`ruptures`), testes não paramétricos e modelo hierárquico simples em **PyMC** (ver documentação em `docs/doc.md`).
 
 ### Documentação
 
 | Recurso | Link |
 |---------|------|
-| Confluence / Wiki | `<colar link aqui>` |
-| Jira / Board | `<colar link aqui>` |
-| GitLab Repo | `<colar link aqui>` |
+| **Doc técnica + guia de leitura dos gráficos (ex.: estudantes de medicina)** | [docs/doc.md](docs/doc.md) |
 
 ### Principais Stakeholders
-* **Nome** (Area/Cargo) - [email@exemplo.com]
-* **Nome** (Area/Cargo) - [email@exemplo.com]
+
+* **Vanderlei Carlos Pisaia**
 
 <p align="right">(<a href="#readme-top">voltar ao topo</a>)</p>
 
@@ -69,21 +69,22 @@ Este projeto segue uma estrutura padronizada para garantir reprodutibilidade.
 │   ├── processed/          # Dados finais prontos para modelagem
 │   └── raw/                # Dados originais imutáveis
 │
-├── notebooks/              # Jupyter Notebooks
-│   ├── eda/                # Análise exploratória de dados
-│   ├── get_data/           # Extração de dados (usa queries/)
-│   ├── processing/         # Transformação e feature engineering
-│   ├── training/           # Treinamento de modelos
-│   ├── modeling/           # Experimentos e avaliação de modelos
-│   └── qa/                 # Validação e quality assurance
+├── docs/                   # Documentação técnica (ex.: doc.md)
+├── notebooks/
+│   ├── eda/                # Análise exploratória
+│   ├── processing/         # Scripts 00–02 (dados → interim)
+│   ├── modeling/           # Ex.: drift temporal (PyMC, EWT, ruptures)
+│   ├── get_data/           # (template) extração adicional
+│   ├── training/           # (template)
+│   └── qa/                 # (template)
 │
 ├── queries/                # Queries SQL (.txt/.sql) para Databricks
 │   └── get_data/           # Queries usadas por notebooks/get_data/
 │
 ├── models/                 # Artefatos de modelos (ignorados pelo Git)
 │
-├── reports/                # Relatórios gerados, html, pdf
-│   └── figures/            # Gráficos e imagens geradas pelos códigos
+├── reports/
+│   └── figures/            # eda/, mensal/, timeseries_drift/, ...
 │
 ├── src/                    # Código Fonte Reutilizável (Library do projeto)
 │   └── __init__.py         # Funções de engenharia de features
@@ -95,6 +96,39 @@ Este projeto segue uma estrutura padronizada para garantir reprodutibilidade.
 ├── pyproject.toml          # Dependências e config (UV workspace)
 └── README.md               # Documentação principal
 ```
+
+<p align="right">(<a href="#readme-top">voltar ao topo</a>)</p>
+
+## Documentação detalhada
+
+A narrativa completa da **aquisição de dados**, **linhagem**, **EWT**, **detecção de mudanças**, **inferência bayesiana** e **limitações** está em **[docs/doc.md](docs/doc.md)**, com diagramas **Mermaid** (fluxos e modelo). A secção **“Como interpretar os gráficos”** explica cada figura de EDA e de drift em **linguagem clínica**, para quem não é estatístico.
+
+<p align="right">(<a href="#readme-top">voltar ao topo</a>)</p>
+
+## Pipeline de dados e análises
+
+Na raiz do projeto, com dependências instaladas (`uv sync`):
+
+```bash
+# 1) Lotes SIH + consolidação renais.parquet (não apaga batches existentes)
+uv run python notebooks/processing/00_get_data.py
+
+# 2) Limpeza → renais_cleaned (raw + processed)
+uv run python notebooks/processing/01_cleaning_cols.py
+
+# 3) Agregados em data/interim/
+uv run python notebooks/processing/02_aggregate_data.py
+
+# 4) EDA (figuras em reports/figures/eda/)
+uv run python notebooks/eda/00_first_eda.py
+uv run python notebooks/eda/01_second_eda.py
+uv run python notebooks/eda/02_second_eda_mensal.py
+
+# 5) Drift temporal: EWT + PELT + Bayes (figuras em reports/figures/timeseries_drift/)
+MPLBACKEND=Agg uv run python notebooks/modeling/03_timeseries_drift.py
+```
+
+**Dependências de modelagem:** `pyewt`, `pymc`, `ruptures`, `arviz` (pin `arviz<1` por compatibilidade com PyMC 5 — ver `pyproject.toml`).
 
 <p align="right">(<a href="#readme-top">voltar ao topo</a>)</p>
 
